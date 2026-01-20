@@ -1,0 +1,15 @@
+[package]
+name = "xilem_web_tailwindcss"
+version.workspace = true
+description = "TailwindCSS class helpers for xilem_web."
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["xilem", "web", "tailwind", "css"]
+categories = ["web-programming", "gui"]
+
+[lints]
+workspace = true
