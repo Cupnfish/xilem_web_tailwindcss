@@ -272,7 +272,7 @@ impl TailwindCli {
     fn downloaded_bin_name() -> Option<String> {
         let platform = match target_lexicon::HOST.operating_system {
             target_lexicon::OperatingSystem::Linux => "linux",
-            target_lexicon::OperatingSystem::Darwin => "macos",
+            target_lexicon::OperatingSystem::Darwin(_) => "macos",
             target_lexicon::OperatingSystem::Windows => "windows",
             _ => return None,
         };

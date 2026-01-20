@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 xilem_web = { git = "https://github.com/linebender/xilem", branch = "main" }
 xilem_web_tailwindcss = { path = "../../crates/xilem_web_tailwindcss" }
-console_error_panic_hook = "0.1.7"
+console_error_panic_hook = "0.1"
 web-sys = "0.3"
 
 [lints.rust]
