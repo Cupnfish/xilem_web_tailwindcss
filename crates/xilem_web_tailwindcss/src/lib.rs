@@ -1,4 +1,4 @@
-//! TailwindCSS class helpers for `xilem_web`.
+//! `TailwindCSS` class helpers for `xilem_web`.
 //!
 //! The `tw!` macro splits whitespace into class tokens and returns a
 //! `TailwindClasses` list.
@@ -60,13 +60,13 @@ impl TwInput for CowStr {
     }
 }
 
-impl<'a> TwInput for &'a TailwindClasses {
+impl TwInput for &TailwindClasses {
     fn append_to(self, classes: &mut TailwindClasses) {
         classes.extend(self.iter().cloned());
     }
 }
 
-impl<'a> TwInput for &'a str {
+impl TwInput for &str {
     fn append_to(self, classes: &mut TailwindClasses) {
         __tw_push_str(classes, self);
     }

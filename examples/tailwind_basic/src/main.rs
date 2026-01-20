@@ -11,6 +11,7 @@ use xilem_web::elements::html as el;
 use xilem_web::interfaces::{Element as _, HtmlButtonElement, HtmlInputElement};
 use xilem_web::{document_body, App, DomFragment};
 use xilem_web_tailwindcss::tw;
+use web_sys::wasm_bindgen::JsCast;
 
 #[derive(Default)]
 struct AppState {
@@ -36,7 +37,10 @@ fn button<F: Fn(&mut AppState, web_sys::PointerEvent) + 'static>(
 }
 
 /// A styled text input component
-fn text_input(value: &str, placeholder: &'static str) -> impl HtmlInputElement<Edit<AppState>> {
+fn text_input(
+    value: &str,
+    placeholder: &'static str,
+) -> impl HtmlInputElement<Edit<AppState>> + use<> {
     el::input(())
         .attr("type", "text")
         .attr("value", value.to_string())

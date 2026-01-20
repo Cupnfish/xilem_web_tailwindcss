@@ -1,7 +1,7 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tracing_subscriber::EnvFilter;
 
 mod tailwind;
@@ -38,7 +38,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Initialize Tailwind CSS files in an existing xilem_web project.
+    /// Initialize Tailwind CSS files in an existing `xilem_web` project.
     Init {
         /// Overwrite existing files.
         #[arg(long)]
@@ -67,17 +67,17 @@ fn main() -> Result<()> {
     match cli.command {
         Command::Init { force } => init_tailwind(&manifest_dir, force),
         Command::Build { no_minify } => {
-            let tailwind = resolve_tailwind(&manifest_dir, &cli.input, cli.version)?;
-            tailwind.run_once(manifest_dir, cli.input, cli.output, !no_minify)
+            let tailwind = resolve_tailwind(&manifest_dir, cli.input.as_ref(), cli.version)?;
+            tailwind.run_once(&manifest_dir, cli.input, cli.output, !no_minify)
         }
         Command::Watch => {
-            let tailwind = resolve_tailwind(&manifest_dir, &cli.input, cli.version)?;
-            tailwind.watch(manifest_dir, cli.input, cli.output)
+            let tailwind = resolve_tailwind(&manifest_dir, cli.input.as_ref(), cli.version)?;
+            tailwind.watch(&manifest_dir, cli.input, cli.output)
         }
     }
 }
 
-fn init_tailwind(manifest_dir: &PathBuf, force: bool) -> Result<()> {
+fn init_tailwind(manifest_dir: &Path, force: bool) -> Result<()> {
     use std::fs;
     use tracing::info;
 
@@ -143,8 +143,8 @@ module.exports = {
 "#;
 
 fn resolve_tailwind(
-    manifest_dir: &PathBuf,
-    input_path: &Option<PathBuf>,
+    manifest_dir: &Path,
+    input_path: Option<&PathBuf>,
     version: Option<String>,
 ) -> Result<TailwindCli> {
     if let Some(version) = version {

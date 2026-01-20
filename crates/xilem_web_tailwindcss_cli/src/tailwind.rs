@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -55,29 +55,26 @@ impl TailwindCli {
     }
 
     /// Use the latest Tailwind release when a tailwind input file is present.
-    pub fn autodetect(manifest_dir: &Path, input_path: &Option<PathBuf>) -> Option<Self> {
-        let input_exists = input_path
-            .as_ref()
-            .map(|p| resolve_path(manifest_dir, p).exists())
-            .unwrap_or_else(|| manifest_dir.join("tailwind.css").exists());
+    pub fn autodetect(manifest_dir: &Path, input_path: Option<&PathBuf>) -> Option<Self> {
+        let input_exists = input_path.map_or_else(
+            || manifest_dir.join("tailwind.css").exists(),
+            |p| resolve_path(manifest_dir, p).exists(),
+        );
         input_exists.then(Self::latest)
     }
 
     pub fn run_once(
         &self,
-        manifest_dir: PathBuf,
+        manifest_dir: &Path,
         input_path: Option<PathBuf>,
         output_path: Option<PathBuf>,
         minify: bool,
     ) -> Result<()> {
         self.ensure_installed()?;
-        let output = self.run_with_output(&manifest_dir, input_path, output_path, minify)?;
+        let output = self.run_with_output(manifest_dir, input_path, output_path, minify)?;
 
         if !output.status.success() {
-            return Err(anyhow!(
-                "tailwindcss failed with status {}",
-                output.status
-            ));
+            return Err(anyhow!("tailwindcss failed with status {}", output.status));
         }
 
         if !output.stderr.is_empty() {
@@ -92,13 +89,13 @@ impl TailwindCli {
 
     pub fn watch(
         &self,
-        manifest_dir: PathBuf,
+        manifest_dir: &Path,
         input_path: Option<PathBuf>,
         output_path: Option<PathBuf>,
     ) -> Result<()> {
         self.ensure_installed()?;
 
-        let mut proc = self.run(&manifest_dir, input_path, output_path, true, false)?;
+        let mut proc = self.run(manifest_dir, input_path, output_path, true, false)?;
         let stdin = proc.stdin.take();
         let status = proc.wait()?;
         drop(stdin);
@@ -190,7 +187,7 @@ impl TailwindCli {
                 .with_context(|| format!("missing tailwindcss@{}", self.version))
         } else {
             let installed_name = self.installed_bin_name();
-            let install_dir = self.install_dir()?;
+            let install_dir = Self::install_dir()?;
             Ok(install_dir.join(installed_name))
         }
     }
@@ -231,11 +228,12 @@ impl TailwindCli {
 
         let binary_path = self.get_binary_path()?;
         if let Some(parent) = binary_path.parent() {
-            std::fs::create_dir_all(parent)
-                .context("failed to create tailwindcss directory")?;
+            std::fs::create_dir_all(parent).context("failed to create tailwindcss directory")?;
         }
 
-        let bytes = response.bytes().context("failed to read tailwindcss body")?;
+        let bytes = response
+            .bytes()
+            .context("failed to read tailwindcss body")?;
         std::fs::write(&binary_path, &bytes).context("failed to write tailwindcss binary")?;
 
         #[cfg(unix)]
@@ -249,7 +247,7 @@ impl TailwindCli {
         Ok(())
     }
 
-    fn downloaded_bin_name(&self) -> Option<String> {
+    fn downloaded_bin_name() -> Option<String> {
         let platform = match target_lexicon::HOST.operating_system {
             target_lexicon::OperatingSystem::Linux => "linux",
             target_lexicon::OperatingSystem::Darwin => "macos",
@@ -258,9 +256,12 @@ impl TailwindCli {
         };
 
         let arch = match target_lexicon::HOST.architecture {
-            target_lexicon::Architecture::X86_64 if platform == "windows" => "x64.exe",
+            target_lexicon::Architecture::X86_64 | target_lexicon::Architecture::Aarch64(_)
+                if platform == "windows" =>
+            {
+                "x64.exe"
+            }
             target_lexicon::Architecture::X86_64 => "x64",
-            target_lexicon::Architecture::Aarch64(_) if platform == "windows" => "x64.exe",
             target_lexicon::Architecture::Aarch64(_) => "arm64",
             _ => return None,
         };
@@ -268,16 +269,15 @@ impl TailwindCli {
         Some(format!("tailwindcss-{platform}-{arch}"))
     }
 
-    fn install_dir(&self) -> Result<PathBuf> {
+    fn install_dir() -> Result<PathBuf> {
         Ok(Workspace::xilem_data_dir()?.join("tailwind"))
     }
 
     fn git_install_url(&self) -> Option<String> {
-        let binary = self.downloaded_bin_name()?;
+        let binary = Self::downloaded_bin_name()?;
         if self.version == Self::LATEST_TAG {
             return Some(format!(
-                "https://github.com/tailwindlabs/tailwindcss/releases/latest/download/{}",
-                binary
+                "https://github.com/tailwindlabs/tailwindcss/releases/latest/download/{binary}"
             ));
         }
         Some(format!(
@@ -289,20 +289,22 @@ impl TailwindCli {
 
 fn resolve_input(manifest_dir: &Path, input_path: Option<PathBuf>) -> PathBuf {
     input_path
-        .map(|p| resolve_path(manifest_dir, &p))
-        .unwrap_or_else(|| manifest_dir.join("tailwind.css"))
+        .map_or_else(|| manifest_dir.join("tailwind.css"), |p| {
+            resolve_path(manifest_dir, &p)
+        })
 }
 
 fn resolve_output(manifest_dir: &Path, output_path: Option<PathBuf>) -> Result<PathBuf> {
     let output_path = output_path
-        .map(|p| resolve_path(manifest_dir, &p))
-        .unwrap_or_else(|| manifest_dir.join("assets").join("tailwind.css"));
+        .map_or_else(
+            || manifest_dir.join("assets").join("tailwind.css"),
+            |p| resolve_path(manifest_dir, &p),
+        );
     let parent = output_path
         .parent()
         .ok_or_else(|| anyhow!("tailwind output path has no parent"))?;
     if !parent.exists() {
-        std::fs::create_dir_all(parent)
-            .context("failed to create tailwindcss output directory")?;
+        std::fs::create_dir_all(parent).context("failed to create tailwindcss output directory")?;
     }
     Ok(output_path)
 }

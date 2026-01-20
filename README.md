@@ -1,17 +1,19 @@
 # xilem_web_tailwindcss
 
-为 xilem_web 提供 TailwindCSS v4 支持的独立仓库，包含两个 crate：
+English | [中文](README.zh-CN.md)
 
-| Crate | 描述 |
-|-------|------|
-| `xilem_web_tailwindcss` | 运行时辅助库（`tw!` 宏、类名拆分） |
-| `xilem_web_tailwindcss_cli` | CLI 工具（自动下载/运行 TailwindCSS） |
+Standalone repo providing TailwindCSS v4 support for `xilem_web`, with two crates:
 
-> CLI 的自动下载与运行逻辑借鉴了 dioxus 的 TailwindCSS 集成实现。
+| Crate | Description |
+|------|-------------|
+| `xilem_web_tailwindcss` | Runtime helpers (`tw!` macro, class splitting) |
+| `xilem_web_tailwindcss_cli` | CLI tool (auto-download/run TailwindCSS) |
 
-## 安装
+> The CLI download/run flow is inspired by the TailwindCSS integration in Dioxus.
 
-### 运行时库
+## Install
+
+### Runtime crate
 
 ```toml
 # Cargo.toml
@@ -19,48 +21,48 @@
 xilem_web_tailwindcss = { git = "https://github.com/Cupnfish/xilem_web_tailwindcss.git" }
 ```
 
-或使用本地路径：
+Or use a local path:
 
 ```toml
 [dependencies]
 xilem_web_tailwindcss = { path = "../xilem_web_tailwindcss/crates/xilem_web_tailwindcss" }
 ```
 
-### CLI 工具
+### CLI tool
 
-从 Git 安装：
+Install from Git:
 
 ```bash
 cargo install --git https://github.com/Cupnfish/xilem_web_tailwindcss.git xilem_web_tailwindcss_cli
 ```
 
-从本地路径安装：
+Install from a local path:
 
 ```bash
 cargo install --path crates/xilem_web_tailwindcss_cli
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 初始化项目
+### 1. Initialize the project
 
 ```bash
 xilem-web-tailwindcss init
 ```
 
-这会创建：
-- `tailwind.css` - Tailwind 输入文件
-- `tailwind.config.js` - 配置文件（扫描 `.rs` 文件）
-- `assets/` 目录
+This creates:
+- `tailwind.css` - Tailwind input file
+- `tailwind.config.js` - config file (scans `.rs` files)
+- `assets/` directory
 
-### 2. 添加依赖
+### 2. Add the dependency
 
 ```toml
 [dependencies]
 xilem_web_tailwindcss = { git = "https://github.com/Cupnfish/xilem_web_tailwindcss.git" }
 ```
 
-### 3. 使用 `tw!` 宏
+### 3. Use the `tw!` macro
 
 ```rust
 use xilem_web::elements::html::div;
@@ -76,84 +78,84 @@ fn view(active: bool) -> impl xilem_web::interfaces::Element<()> {
 }
 ```
 
-### 4. 构建 CSS
+### 4. Build CSS
 
 ```bash
-# 一次性构建
+# One-off build
 xilem-web-tailwindcss build
 
-# 监听模式（开发时使用）
+# Watch mode (for development)
 xilem-web-tailwindcss watch
 ```
 
-### 5. 运行项目
+### 5. Run the project
 
 ```bash
 trunk serve
 ```
 
-## 功能概览
+## Features
 
-- Tailwind v4 工作流（默认使用 GitHub latest release）
-- `tw!` 宏将空格拆分为 class token，输出 `Vec<Cow<'static, str>>`
-- CLI 无需 Node 依赖，自动下载官方 tailwindcss 二进制
-- 支持 `init`/`build`/`watch` 三种模式
+- Tailwind v4 workflow (defaults to GitHub latest release)
+- `tw!` macro splits whitespace into class tokens, returning `Vec<Cow<'static, str>>`
+- CLI runs without Node and downloads the official `tailwindcss` binary
+- Supports `init` / `build` / `watch`
 
-## CLI 命令
+## CLI Commands
 
-### `init` - 初始化
+### `init` - Initialize
 
 ```bash
-xilem-web-tailwindcss init          # 初始化 Tailwind 文件
-xilem-web-tailwindcss init --force  # 强制覆盖已有文件
+xilem-web-tailwindcss init
+xilem-web-tailwindcss init --force
 ```
 
-### `build` - 构建
+### `build` - Build
 
 ```bash
-xilem-web-tailwindcss build             # 构建（默认 minify）
-xilem-web-tailwindcss build --no-minify # 不压缩
+xilem-web-tailwindcss build
+xilem-web-tailwindcss build --no-minify
 ```
 
-### `watch` - 监听
+### `watch` - Watch
 
 ```bash
-xilem-web-tailwindcss watch  # 监听文件变化并自动重建
+xilem-web-tailwindcss watch
 ```
 
-### 通用选项
+### Common options
 
-| 选项 | 短选项 | 说明 |
-|------|--------|------|
-| `--manifest-path` | | 目录或 Cargo.toml 路径 |
-| `--input` | `-i` | 输入文件（默认 `tailwind.css`） |
-| `--output` | `-o` | 输出文件（默认 `assets/tailwind.css`） |
-| `--version` | | Tailwind 版本（如 `v4.1.6` 或 `latest`） |
-| `--no-downloads` | | 只使用 PATH 中的 tailwindcss |
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--manifest-path` | | Directory or Cargo.toml path |
+| `--input` | `-i` | Input file (default `tailwind.css`) |
+| `--output` | `-o` | Output file (default `assets/tailwind.css`) |
+| `--version` | | Tailwind version (e.g. `v4.1.6` or `latest`) |
+| `--no-downloads` | | Only use tailwindcss from PATH |
 
-环境变量：`XILEM_TAILWIND_NO_DOWNLOADS=1` 禁用自动下载
+Environment variable: `XILEM_TAILWIND_NO_DOWNLOADS=1` disables auto-downloads.
 
-## 开发工作流
+## Dev workflow
 
-推荐在两个终端中分别运行：
+Run these in two terminals:
 
 ```bash
-# 终端 1: 监听 Tailwind CSS 变化
+# Terminal 1: watch Tailwind CSS
 xilem-web-tailwindcss watch
 
-# 终端 2: trunk 热重载
+# Terminal 2: trunk hot reload
 trunk serve
 ```
 
-## Tailwind v4 配置示例
+## Tailwind v4 config example
 
-`tailwind.css`：
+`tailwind.css`:
 
 ```css
 @import "tailwindcss";
 ```
 
-`tailwind.config.js`：
+`tailwind.config.js`:
 
 ```js
 module.exports = {
@@ -164,20 +166,20 @@ module.exports = {
 };
 ```
 
-## 示例
+## Examples
 
-- **完整示例**：[`examples/tailwind_basic`](./examples/tailwind_basic)
+- **Full example**: `examples/tailwind_basic`
   ```bash
   cd examples/tailwind_basic
   xilem-web-tailwindcss build
   trunk serve
   ```
 
-- **宏示例**：`crates/xilem_web_tailwindcss/examples/tw_macro.rs`
+- **Macro example**: `crates/xilem_web_tailwindcss/examples/tw_macro.rs`
   ```bash
   cargo run -p xilem_web_tailwindcss --example tw_macro
   ```
 
-## 许可证
+## License
 
 Apache-2.0
