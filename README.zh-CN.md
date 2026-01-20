@@ -12,20 +12,12 @@
 > CLI 的自动下载与运行逻辑借鉴了 dioxus 的 TailwindCSS 集成实现。
 
 ## 安装
-
 ### 运行时库
 
 ```toml
 # Cargo.toml
 [dependencies]
 xilem_web_tailwindcss = { git = "https://github.com/Cupnfish/xilem_web_tailwindcss.git" }
-```
-
-或使用本地路径：
-
-```toml
-[dependencies]
-xilem_web_tailwindcss = { path = "../xilem_web_tailwindcss/crates/xilem_web_tailwindcss" }
 ```
 
 ### CLI 工具
@@ -36,9 +28,13 @@ xilem_web_tailwindcss = { path = "../xilem_web_tailwindcss/crates/xilem_web_tail
 cargo install --git https://github.com/Cupnfish/xilem_web_tailwindcss.git xilem_web_tailwindcss_cli
 ```
 
-从本地路径安装：
+从本地克隆安装：
 
 ```bash
+# 首先，克隆仓库
+git clone https://github.com/Cupnfish/xilem_web_tailwindcss.git
+cd xilem_web_tailwindcss
+# 然后从本地路径安装
 cargo install --path crates/xilem_web_tailwindcss_cli
 ```
 

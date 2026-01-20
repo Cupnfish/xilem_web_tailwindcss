@@ -21,13 +21,6 @@ Standalone repo providing TailwindCSS v4 support for `xilem_web`, with two crate
 xilem_web_tailwindcss = { git = "https://github.com/Cupnfish/xilem_web_tailwindcss.git" }
 ```
 
-Or use a local path:
-
-```toml
-[dependencies]
-xilem_web_tailwindcss = { path = "../xilem_web_tailwindcss/crates/xilem_web_tailwindcss" }
-```
-
 ### CLI tool
 
 Install from Git:
@@ -36,9 +29,13 @@ Install from Git:
 cargo install --git https://github.com/Cupnfish/xilem_web_tailwindcss.git xilem_web_tailwindcss_cli
 ```
 
-Install from a local path:
+Install from a local clone:
 
 ```bash
+# First, clone the repository
+git clone https://github.com/Cupnfish/xilem_web_tailwindcss.git
+cd xilem_web_tailwindcss
+# Then install from the local path
 cargo install --path crates/xilem_web_tailwindcss_cli
 ```
 
