@@ -1,7 +1,10 @@
-use anyhow::{Result, anyhow};
-use clap::{Parser, Subcommand};
+use anyhow::{Context, Result, anyhow};
+use clap::{Args, Parser, Subcommand};
 use std::env;
 use std::path::{Path, PathBuf};
+use std::process::{Child, Command as ProcessCommand, Stdio};
+use std::time::Duration;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 mod tailwind;
@@ -13,23 +16,23 @@ use tailwind::{CliSettings, TailwindCli};
 #[command(about = "TailwindCSS helper for xilem_web projects")]
 struct Cli {
     /// Path to Cargo.toml or project directory.
-    #[arg(long)]
+    #[arg(long, global = true)]
     manifest_path: Option<PathBuf>,
 
     /// Path to the tailwind input CSS file.
-    #[arg(long, short = 'i')]
+    #[arg(long, short = 'i', global = true)]
     input: Option<PathBuf>,
 
     /// Path to the generated tailwind output CSS file.
-    #[arg(long, short = 'o')]
+    #[arg(long, short = 'o', global = true)]
     output: Option<PathBuf>,
 
     /// Tailwind version tag (e.g. v4.1.5) or shorthand (v4/latest).
-    #[arg(long)]
+    #[arg(long, global = true)]
     version: Option<String>,
 
     /// Prefer using an existing tailwindcss binary from PATH.
-    #[arg(long)]
+    #[arg(long, global = true)]
     no_downloads: bool,
 
     #[command(subcommand)]
@@ -52,6 +55,59 @@ enum Command {
     },
     /// Watch inputs and rebuild on changes.
     Watch,
+    /// Run Tailwind watch and `trunk serve` together.
+    Dev {
+        #[command(flatten)]
+        trunk: TrunkServeOptions,
+    },
+}
+
+#[derive(Args, Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
+struct TrunkServeOptions {
+    /// Path to the Trunk config file.
+    #[arg(long)]
+    config: Option<PathBuf>,
+
+    /// The addresses to serve on.
+    #[arg(long, short = 'a')]
+    address: Vec<String>,
+
+    /// The port to serve on.
+    #[arg(long, short = 'p')]
+    port: Option<u16>,
+
+    /// Open a browser tab once the initial build is complete.
+    #[arg(long)]
+    open: bool,
+
+    /// Disable auto-reload of the web app.
+    #[arg(long)]
+    no_autoreload: bool,
+
+    /// Disable fallback to index.html for missing files.
+    #[arg(long)]
+    no_spa: bool,
+
+    /// Watch specific file(s) or folder(s).
+    #[arg(long, short = 'w')]
+    watch: Vec<PathBuf>,
+
+    /// Paths to ignore.
+    #[arg(long)]
+    ignore: Vec<PathBuf>,
+
+    /// The output dir for all final assets.
+    #[arg(long, short = 'd')]
+    dist: Option<PathBuf>,
+
+    /// Build in release mode.
+    #[arg(long)]
+    release: bool,
+
+    /// The public URL from which assets are to be served.
+    #[arg(long)]
+    public_url: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -74,12 +130,15 @@ fn main() -> Result<()> {
             let tailwind = resolve_tailwind(&manifest_dir, cli.input.as_ref(), cli.version)?;
             tailwind.watch(&manifest_dir, cli.input, cli.output)
         }
+        Command::Dev { trunk } => {
+            let tailwind = resolve_tailwind(&manifest_dir, cli.input.as_ref(), cli.version)?;
+            run_dev(&manifest_dir, &tailwind, cli.input, cli.output, &trunk)
+        }
     }
 }
 
 fn init_tailwind(manifest_dir: &Path, force: bool) -> Result<()> {
     use std::fs;
-    use tracing::info;
 
     let tailwind_css = manifest_dir.join("tailwind.css");
     let tailwind_config = manifest_dir.join("tailwind.config.js");
@@ -162,14 +221,133 @@ fn resolve_tailwind(
 
 fn resolve_manifest_dir(manifest_path: Option<PathBuf>) -> Result<PathBuf> {
     let path = manifest_path.unwrap_or_else(|| PathBuf::from("."));
-    if path.is_dir() {
-        return Ok(path);
+    let dir = if path.is_dir() {
+        path
+    } else {
+        path.parent()
+            .map(PathBuf::from)
+            .ok_or_else(|| anyhow!("manifest path has no parent directory"))?
+    };
+    std::fs::canonicalize(&dir)
+        .with_context(|| format!("failed to resolve manifest path {}", dir.display()))
+}
+
+fn run_dev(
+    manifest_dir: &Path,
+    tailwind: &TailwindCli,
+    input_path: Option<PathBuf>,
+    output_path: Option<PathBuf>,
+    trunk: &TrunkServeOptions,
+) -> Result<()> {
+    info!("Starting Tailwind watch and trunk serve...");
+    tailwind.ensure_installed()?;
+
+    let mut tailwind_child = tailwind.run_with_stdio(
+        manifest_dir,
+        input_path,
+        output_path,
+        true,
+        false,
+        Stdio::inherit(),
+        Stdio::inherit(),
+    )?;
+    let mut trunk_child = spawn_trunk(manifest_dir, trunk)?;
+
+    wait_for_dev_exit(&mut tailwind_child, &mut trunk_child)
+}
+
+fn spawn_trunk(manifest_dir: &Path, trunk: &TrunkServeOptions) -> Result<Child> {
+    let mut cmd = ProcessCommand::new("trunk");
+    cmd.arg("serve");
+
+    if let Some(config) = trunk.config.as_ref() {
+        cmd.arg("--config").arg(config);
     }
-    let parent = path
-        .parent()
-        .map(PathBuf::from)
-        .ok_or_else(|| anyhow!("manifest path has no parent directory"))?;
-    Ok(parent)
+    for address in &trunk.address {
+        cmd.arg("--address").arg(address);
+    }
+    if let Some(port) = trunk.port {
+        cmd.arg("--port").arg(port.to_string());
+    }
+    if trunk.open {
+        cmd.arg("--open");
+    }
+    if trunk.no_autoreload {
+        cmd.arg("--no-autoreload");
+    }
+    if trunk.no_spa {
+        cmd.arg("--no-spa");
+    }
+    for watch in &trunk.watch {
+        cmd.arg("--watch").arg(watch);
+    }
+    for ignore in &trunk.ignore {
+        cmd.arg("--ignore").arg(ignore);
+    }
+    if let Some(dist) = trunk.dist.as_ref() {
+        cmd.arg("--dist").arg(dist);
+    }
+    if trunk.release {
+        cmd.arg("--release");
+    }
+    if let Some(public_url) = trunk.public_url.as_ref() {
+        cmd.arg("--public-url").arg(public_url);
+    }
+
+    if let Some(value) = env::var_os("NO_COLOR") {
+        match value.to_string_lossy().as_ref() {
+            "1" => {
+                cmd.env("NO_COLOR", "true");
+            }
+            "0" => {
+                cmd.env("NO_COLOR", "false");
+            }
+            _ => {}
+        }
+    }
+
+    let child = cmd
+        .current_dir(manifest_dir)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .context("failed to spawn trunk serve")?;
+    Ok(child)
+}
+
+fn wait_for_dev_exit(tailwind: &mut Child, trunk: &mut Child) -> Result<()> {
+    loop {
+        if let Some(status) = tailwind.try_wait()? {
+            terminate_child("trunk", trunk);
+            return exit_status("tailwindcss watch", status);
+        }
+
+        if let Some(status) = trunk.try_wait()? {
+            terminate_child("tailwindcss watch", tailwind);
+            return exit_status("trunk serve", status);
+        }
+
+        std::thread::sleep(Duration::from_millis(200));
+    }
+}
+
+fn terminate_child(label: &str, child: &mut Child) {
+    if let Err(err) = child.kill() {
+        warn!(error = %err, "Failed to terminate {label} process");
+    }
+
+    if let Err(err) = child.wait() {
+        warn!(error = %err, "Failed to wait for {label} process");
+    }
+}
+
+fn exit_status(label: &str, status: std::process::ExitStatus) -> Result<()> {
+    if status.success() {
+        Ok(())
+    } else {
+        Err(anyhow!("{label} exited with status {status}"))
+    }
 }
 
 fn init_tracing() {

@@ -37,6 +37,12 @@ xilem-web-tailwindcss build
 
 # Or watch for changes (run in a separate terminal)
 xilem-web-tailwindcss watch
+
+# Or run watch + trunk together
+xilem-web-tailwindcss dev
+
+# Pass trunk options if needed
+xilem-web-tailwindcss dev --port 8085 --open
 ```
 
 ### 4. Run with trunk
@@ -48,6 +54,12 @@ trunk serve
 Open http://localhost:8080 in your browser.
 
 ## Development Workflow
+
+For a one-command workflow:
+
+```bash
+xilem-web-tailwindcss dev
+```
 
 For the best development experience, run these in separate terminals:
 

@@ -94,12 +94,18 @@ xilem-web-tailwindcss watch
 trunk serve
 ```
 
+开发时也可以用一条命令同时运行：
+
+```bash
+xilem-web-tailwindcss dev
+```
+
 ## 功能概览
 
 - Tailwind v4 工作流（默认使用 GitHub latest release）
 - `tw!` 宏将空格拆分为 class token，输出 `Vec<Cow<'static, str>>`
 - CLI 无需 Node 依赖，自动下载官方 tailwindcss 二进制
-- 支持 `init`/`build`/`watch` 三种模式
+- 支持 `init`/`build`/`watch`/`dev` 四种模式
 
 ## CLI 命令
 
@@ -123,6 +129,19 @@ xilem-web-tailwindcss build --no-minify # 不压缩
 xilem-web-tailwindcss watch  # 监听文件变化并自动重建
 ```
 
+### `dev` - 监听 + 运行
+
+```bash
+xilem-web-tailwindcss dev
+```
+
+支持常用 trunk 选项：
+
+```bash
+xilem-web-tailwindcss dev --port 8085 --open
+xilem-web-tailwindcss dev --address 0.0.0.0 --watch src
+```
+
 ### 通用选项
 
 | 选项 | 短选项 | 说明 |
@@ -137,7 +156,13 @@ xilem-web-tailwindcss watch  # 监听文件变化并自动重建
 
 ## 开发工作流
 
-推荐在两个终端中分别运行：
+单命令模式：
+
+```bash
+xilem-web-tailwindcss dev
+```
+
+或推荐在两个终端中分别运行：
 
 ```bash
 # 终端 1: 监听 Tailwind CSS 变化

@@ -115,6 +115,28 @@ impl TailwindCli {
         watch: bool,
         minify: bool,
     ) -> Result<Child> {
+        self.run_with_stdio(
+            manifest_dir,
+            input_path,
+            output_path,
+            watch,
+            minify,
+            Stdio::null(),
+            Stdio::null(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn run_with_stdio(
+        &self,
+        manifest_dir: &Path,
+        input_path: Option<PathBuf>,
+        output_path: Option<PathBuf>,
+        watch: bool,
+        minify: bool,
+        stdout: Stdio,
+        stderr: Stdio,
+    ) -> Result<Child> {
         let binary_path = self.get_binary_path()?;
         let input_path = resolve_input(manifest_dir, input_path);
         let output_path = resolve_output(manifest_dir, output_path)?;
@@ -146,8 +168,8 @@ impl TailwindCli {
             .args(minify.then_some("--minify"))
             .current_dir(manifest_dir)
             .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stdout(stdout)
+            .stderr(stderr)
             .spawn()
             .context("failed to spawn tailwindcss")?;
 

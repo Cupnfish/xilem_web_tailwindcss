@@ -22,6 +22,9 @@ xilem-web-tailwindcss build
 
 # Watch for changes
 xilem-web-tailwindcss watch
+
+# Watch Tailwind and run trunk serve together
+xilem-web-tailwindcss dev
 ```
 
 ## Commands
@@ -58,6 +61,21 @@ Watch for changes and rebuild automatically:
 
 ```bash
 xilem-web-tailwindcss watch
+```
+
+### `dev`
+
+Run Tailwind watch and `trunk serve` together:
+
+```bash
+xilem-web-tailwindcss dev
+```
+
+Common trunk options are supported:
+
+```bash
+xilem-web-tailwindcss dev --port 8085 --open
+xilem-web-tailwindcss dev --address 0.0.0.0 --watch src
 ```
 
 ## Options

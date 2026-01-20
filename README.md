@@ -94,12 +94,18 @@ xilem-web-tailwindcss watch
 trunk serve
 ```
 
+For development, you can run both with a single command:
+
+```bash
+xilem-web-tailwindcss dev
+```
+
 ## Features
 
 - Tailwind v4 workflow (defaults to GitHub latest release)
 - `tw!` macro splits whitespace into class tokens, returning `Vec<Cow<'static, str>>`
 - CLI runs without Node and downloads the official `tailwindcss` binary
-- Supports `init` / `build` / `watch`
+- Supports `init` / `build` / `watch` / `dev`
 
 ## CLI Commands
 
@@ -123,6 +129,19 @@ xilem-web-tailwindcss build --no-minify
 xilem-web-tailwindcss watch
 ```
 
+### `dev` - Watch + serve
+
+```bash
+xilem-web-tailwindcss dev
+```
+
+Common trunk options are available:
+
+```bash
+xilem-web-tailwindcss dev --port 8085 --open
+xilem-web-tailwindcss dev --address 0.0.0.0 --watch src
+```
+
 ### Common options
 
 | Option | Short | Description |
@@ -137,7 +156,13 @@ Environment variable: `XILEM_TAILWIND_NO_DOWNLOADS=1` disables auto-downloads.
 
 ## Dev workflow
 
-Run these in two terminals:
+Use a single command:
+
+```bash
+xilem-web-tailwindcss dev
+```
+
+Or run these in two terminals:
 
 ```bash
 # Terminal 1: watch Tailwind CSS
