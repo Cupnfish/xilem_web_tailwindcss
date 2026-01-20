@@ -58,7 +58,7 @@ impl TailwindCli {
     pub fn autodetect(manifest_dir: &Path, input_path: Option<&PathBuf>) -> Option<Self> {
         let input_exists = input_path.map_or_else(
             || manifest_dir.join("tailwind.css").exists(),
-            |p| resolve_path(manifest_dir, p).exists(),
+            |p| resolve_input_path(manifest_dir, p).exists(),
         );
         input_exists.then(Self::latest)
     }
@@ -310,18 +310,17 @@ impl TailwindCli {
 }
 
 fn resolve_input(manifest_dir: &Path, input_path: Option<PathBuf>) -> PathBuf {
-    input_path
-        .map_or_else(|| manifest_dir.join("tailwind.css"), |p| {
-            resolve_path(manifest_dir, &p)
-        })
+    input_path.map_or_else(
+        || manifest_dir.join("tailwind.css"),
+        |p| resolve_input_path(manifest_dir, &p),
+    )
 }
 
 fn resolve_output(manifest_dir: &Path, output_path: Option<PathBuf>) -> Result<PathBuf> {
-    let output_path = output_path
-        .map_or_else(
-            || manifest_dir.join("assets").join("tailwind.css"),
-            |p| resolve_path(manifest_dir, &p),
-        );
+    let output_path = output_path.map_or_else(
+        || manifest_dir.join("assets").join("tailwind.css"),
+        |p| resolve_output_path(manifest_dir, &p),
+    );
     let parent = output_path
         .parent()
         .ok_or_else(|| anyhow!("tailwind output path has no parent"))?;
@@ -331,12 +330,51 @@ fn resolve_output(manifest_dir: &Path, output_path: Option<PathBuf>) -> Result<P
     Ok(output_path)
 }
 
-fn resolve_path(manifest_dir: &Path, path: &Path) -> PathBuf {
+fn resolve_input_path(manifest_dir: &Path, path: &Path) -> PathBuf {
     if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        manifest_dir.join(path)
+        return path.to_path_buf();
     }
+
+    let manifest_candidate = manifest_dir.join(path);
+    if manifest_candidate.exists() {
+        return manifest_candidate;
+    }
+
+    if let Ok(cwd) = env::current_dir() {
+        let cwd_candidate = cwd.join(path);
+        if cwd_candidate.exists() {
+            return cwd_candidate;
+        }
+    }
+
+    manifest_candidate
+}
+
+fn resolve_output_path(manifest_dir: &Path, path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        return path.to_path_buf();
+    }
+
+    let manifest_candidate = manifest_dir.join(path);
+    if parent_exists(&manifest_candidate) {
+        return manifest_candidate;
+    }
+
+    if let Ok(cwd) = env::current_dir() {
+        let cwd_candidate = cwd.join(path);
+        if parent_exists(&cwd_candidate) {
+            return cwd_candidate;
+        }
+    }
+
+    manifest_candidate
+}
+
+fn parent_exists(path: &Path) -> bool {
+    let Some(parent) = path.parent() else {
+        return false;
+    };
+    parent.exists()
 }
 
 fn env_flag(name: &str) -> bool {
